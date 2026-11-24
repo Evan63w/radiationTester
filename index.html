@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flexible Shield Lab</title>
+  <link rel="stylesheet" href="web.css">
+  <script defer src="web-model.js"></script>
+  <script defer src="web-app.js"></script>
+</head>
+<body>
+<header>
+  <div class="shell">
+    <p class="eyebrow">MATERIALS RESEARCH TOOL</p>
+    <h1>Flexible Shield Lab</h1>
+    <p>Explore candidate photon-shielding composites before laboratory testing.</p>
+  </div>
+</header>
+<main class="shell">
+  <div class="warning"><strong>Research screening only — not a safety assessment.</strong>
+    Estimates cover uncollided, monoenergetic X-ray/gamma photons only. They exclude scatter,
+    fluorescence, geometry, spectra, defects and mechanical performance. Never use these
+    results alone to select protective equipment.</div>
+  <p id="error" class="error" role="alert" hidden></p>
+  <div class="layout">
+    <aside class="card">
+      <h2>Recipe</h2>
+      <p class="muted">Polyethylene binder with elemental fillers. Percentages are by mass, not volume.</p>
+      <label for="tungsten">Tungsten <output id="tungsten-value">40%</output></label>
+      <input id="tungsten" type="range" min="0" max="100" value="40">
+      <label for="bismuth">Bismuth <output id="bismuth-value">30%</output></label>
+      <input id="bismuth" type="range" min="0" max="60" value="30">
+      <p>Polyethylene: <strong id="polyethylene-value">30%</strong></p>
+      <p class="muted">Ideal void-free density: <strong id="ideal-density"></strong> g/cm³</p>
+      <label class="check"><input id="use-density" type="checkbox"> Use measured density</label>
+      <div id="density-field" hidden>
+        <label for="density">Measured density (g/cm³)</label>
+        <input id="density" type="number" min="0.001" max="30" step="any" value="2.7">
+      </div>
+      <label for="thickness">Sheet thickness (mm)</label>
+      <input id="thickness" type="number" min="0.001" max="1000" step="any" value="1">
+      <label for="energy">Photon energy (keV)</label>
+      <input id="energy" type="number" min="1" max="20000" step="any" value="100">
+      <label for="lead-thickness">Lead reference thickness (mm)</label>
+      <input id="lead-thickness" type="number" min="0" max="1000" step="any" value="0.25">
+    </aside>
+    <div>
+      <section class="card">
+        <h2 id="energy-heading">Results</h2>
+        <div class="metrics">
+          <div><span>Uncollided transmission</span><strong id="transmission">—</strong></div>
+          <div><span>Areal mass</span><strong id="mass">—</strong></div>
+          <div><span>Lead equivalent</span><strong id="lead-equivalent">—</strong></div>
+          <div><span>Mass attenuation</span><strong id="coefficient">—</strong></div>
+        </div>
+        <p id="lead-comparison" class="muted"></p>
+      </section>
+      <section class="card">
+        <h2>Transmission across photon energies</h2>
+        <div class="legend"><span class="composite">● Composite</span><span class="lead">● Lead reference</span></div>
+        <svg id="chart" viewBox="0 0 760 330" role="img" aria-label="Uncollided photon transmission versus energy"></svg>
+        <p class="muted">Energy in keV (log scale); transmission in %. Lines use log-log interpolation of NIST tables. Sharp jumps are absorption edges; exact edge values use the upper side.</p>
+      </section>
+      <section class="card">
+        <h2>Compare recipes</h2>
+        <p class="muted">Saved recipes are compared at the current energy and last only until this page is closed or refreshed. Export the CSV to keep the results.</p>
+        <label for="recipe-name">Recipe name</label>
+        <input id="recipe-name" type="text" value="Recipe 1" maxlength="100">
+        <div class="actions">
+          <button id="save">Save current recipe</button>
+          <button id="clear" class="secondary">Clear saved recipes</button>
+          <button id="export-csv" class="secondary" disabled>Download comparison CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table id="comparison" hidden>
+            <thead><tr><th>Recipe</th><th>W %</th><th>Bi %</th><th>PE %</th><th>Density g/cm³</th><th>Thickness mm</th><th>Transmission %</th><th>Mass kg/m²</th><th>Lead equiv. mm</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card">
+        <h2>OpenGATE simulation</h2>
+        <p>Download the current recipe to run the optional OpenGATE/Geant4 slab simulation on your computer. The website itself does not run Geant4.</p>
+        <button id="export-json">Download simulation recipe</button>
+        <a href="https://github.com/Evan63w/radiationTester#optional-opengate-simulation">Simulation instructions</a>
+      </section>
+      <details class="card">
+        <summary>Methods and data sources</summary>
+        <p>Mass fractions are combined by the mixture rule. Density defaults to an ideal additive-volume estimate, assuming no porosity; replace it with a measured value. Transmission is exp(-μ/ρ × density × thickness), for a uniform sheet at normal incidence. Lead equivalence is energy-specific.</p>
+        <p>Flexibility, toxicity, manufacturing feasibility and dose are not predicted. NIST mass attenuation tables: <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/polyethylene.html">polyethylene</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z74.html">tungsten</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z83.html">bismuth</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z82.html">lead</a>.</p>
+      </details>
+    </div>
+  </div>
+</main>
+</body>
+</html>

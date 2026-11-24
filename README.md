@@ -1,6 +1,6 @@
 # Flexible Shield Lab
 
-A local research dashboard for screening polyethylene composites with elemental
+A research dashboard for screening polyethylene composites with elemental
 tungsten and bismuth fillers against X-ray or gamma photons. It is not designed
 for neutrons, beta particles, or radiation protection decisions.
 
@@ -11,7 +11,13 @@ seams, defects and actual use geometry are omitted. The app does not predict
 flexibility, toxicity, manufacturability or durability. Any proposed material
 must be measured and independently evaluated for the intended application.
 
-## Run the dashboard
+## Open the dashboard
+
+The browser version runs at <https://evan63w.github.io/radiationTester/>. It
+performs the screening calculations locally in your browser and does not run
+OpenGATE. Recipe comparisons are temporary unless exported.
+
+## Run the Python dashboard locally
 
 Requires Python 3.9 or newer. From this directory:
 
@@ -74,4 +80,5 @@ Ideal density assumes additive component volumes: `1 / sum(w_i / density_i)`.
 The polyethylene elemental mass fractions in the OpenGATE script come from
 [NIST's composition table](https://physics.nist.gov/cgi-bin/Star/compos.pl?matno=221).
 
-Run calculation tests with `python -m unittest discover -s tests`.
+Run Python tests with `python -m unittest discover -s tests` and browser
+calculation tests with `node tests/test_web_model.js`.
