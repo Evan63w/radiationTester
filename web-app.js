@@ -18,6 +18,7 @@ function number(id, min, max) {
 
 function readRecipe() {
   const mode = $("recipe-mode").value;
+  $("cnt-fields").hidden = mode !== "cnt";
   $("preset-fields").hidden = mode !== "preset";
   $("custom-fields").hidden = mode !== "custom";
   $("optimize-fields").hidden = mode !== "optimize";
@@ -25,7 +26,11 @@ function readRecipe() {
   $("density-field").hidden = mode !== "preset" || !$("use-density").checked;
   const energy = number("energy", 1, 20000);
   let fractions, density;
-  if (mode === "optimize") {
+  if (mode === "cnt") {
+    const cnt = number("cnt-percent", 0, 100) / 100;
+    fractions = {C: cnt, polyethylene: 1 - cnt};
+    density = number("cnt-density", 0.001, 30);
+  } else if (mode === "optimize") {
     const candidates = [...$("candidates").children].map(row => {
       const input = row.querySelector("input");
       return {name: row.querySelector("select").value, maxPercent: input.value.trim() ? Number(input.value) : NaN};
@@ -178,6 +183,13 @@ function update() {
     $("mass").textContent = `${fmt(result.mass)} kg/m²`;
     $("lead-equivalent").textContent = `${fmt(result.leadEquivalent)} mm`;
     $("coefficient").textContent = `${fmt(result.coefficient)} cm²/g`;
+    const linearMu = result.coefficient * recipe.density_g_cm3;
+    $("linear-coefficient").textContent = `${fmt(linearMu)} cm⁻¹`;
+    const targetInput = $("mu-target").value.trim();
+    const target = Number(targetInput);
+    $("mu-target-result").textContent = targetInput && Number.isFinite(target) && target >= 0 && target <= 1000000
+      ? `Model μ: ${fmt(linearMu)} cm⁻¹; difference from target: ${fmt(linearMu - target)} cm⁻¹. At the target μ, this sheet would transmit ${fmt(Math.exp(-target * recipe.thickness_mm / 10) * 100)}% of uncollided photons.`
+      : "Enter a target between 0 and 1,000,000 cm⁻¹.";
     $("lead-comparison").textContent = `At this energy, ${fmt(leadThickness)} mm of lead transmits ${fmt(leadTransmission * 100)}% of uncollided photons and weighs ${fmt(model.densities.lead * leadThickness)} kg/m². Lead equivalence is energy-specific and only refers to this narrow-beam calculation.`;
     renderChart(recipe, leadThickness);
     renderComparisons(recipe.energy_kev);
@@ -195,7 +207,8 @@ function update() {
     $("export-json").disabled = true;
     $("export-csv").disabled = true;
     $("energy-heading").textContent = "Results unavailable";
-    for (const id of ["transmission", "mass", "lead-equivalent", "coefficient"]) $(id).textContent = "—";
+    for (const id of ["transmission", "mass", "lead-equivalent", "coefficient", "linear-coefficient"]) $(id).textContent = "—";
+    $("mu-target-result").textContent = "Enter a valid composition and density to compare μ with the target.";
     $("lead-comparison").textContent = "";
     $("chart").replaceChildren();
     $("comparison").hidden = true;
@@ -236,7 +249,7 @@ async function init() {
   addComponent("H", 50);
   addComponent("W", 100, true);
   addComponent("Bi", 100, true);
-  for (const id of ["tungsten", "bismuth", "use-density", "density", "custom-density", "optimizer-density", "binder-percent", "thickness", "energy", "lead-thickness", "recipe-mode", "bend-limit"]) {
+  for (const id of ["cnt-percent", "cnt-density", "mu-target", "tungsten", "bismuth", "use-density", "density", "custom-density", "optimizer-density", "binder-percent", "thickness", "energy", "lead-thickness", "recipe-mode", "bend-limit"]) {
     $(id).addEventListener("input", update);
   }
   $("composition-basis").addEventListener("change", () => {

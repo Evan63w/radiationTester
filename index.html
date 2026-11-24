@@ -27,8 +27,16 @@
     <aside class="card">
       <h2>Recipe</h2>
       <label for="recipe-mode">Composition mode</label>
-      <select id="recipe-mode"><option value="optimize">Optimize selected elements</option><option value="preset">Polyethylene + tungsten / bismuth</option><option value="custom">Custom elemental composition</option></select>
-      <div id="optimize-fields">
+      <select id="recipe-mode"><option value="cnt">Carbon nanotubes + polyethylene matrix</option><option value="optimize">Optimize selected elements</option><option value="preset">Polyethylene + tungsten / bismuth</option><option value="custom">Custom elemental composition</option></select>
+      <div id="cnt-fields">
+        <p class="muted">Screen a carbon nanotube (CNT) and polyethylene matrix composite. Polyethylene is an example matrix, not a confirmed suitable material; the default CNT percentage and energy are illustrative only. CNTs are approximated as elemental carbon in a homogeneous mixture; tube structure, alignment, dispersion and mechanical behavior are not simulated.</p>
+        <label for="cnt-percent">CNT mass percentage</label>
+        <input id="cnt-percent" type="number" min="0" max="100" step="any" value="5">
+        <label for="cnt-density">Composite bulk density (g/cm³; measured or assumed)</label>
+        <input id="cnt-density" type="number" min="0.001" max="30" step="any" placeholder="Required">
+        <p class="muted">The remaining mass is polyethylene. Measure density and flexibility for the actual sample; the proportions alone do not establish flexibility.</p>
+      </div>
+      <div id="optimize-fields" hidden>
         <p class="muted">Select candidate elements and optionally limit their maximum mass percentages. The optimizer minimizes uncollided transmission at the selected energy, thickness, and assumed bulk density.</p>
         <p class="muted">Some elements are toxic, radioactive or unsuitable. Selection is not a recommendation. Unconstrained optimization can choose just one element, not a practical or flexible compound.</p>
         <p class="muted">Each row: element and maximum percentage of total mass.</p>
@@ -82,8 +90,17 @@
           <div><span>Areal mass</span><strong id="mass">—</strong></div>
           <div><span>Lead equivalent</span><strong id="lead-equivalent">—</strong></div>
           <div><span>Mass attenuation</span><strong id="coefficient">—</strong></div>
+          <div><span>Linear attenuation μ</span><strong id="linear-coefficient">—</strong></div>
         </div>
         <p id="lead-comparison" class="muted"></p>
+      </section>
+      <section class="card">
+        <h2>Beer–Lambert μ target</h2>
+        <p class="muted">For a homogeneous sheet at the selected energy, μ = (μ/ρ) × density and uncollided transmission = exp(−μ × thickness in cm). This NIST mixture estimate does not resolve CNT structure.</p>
+        <label for="mu-target">Comparison target μ (cm⁻¹)</label>
+        <input id="mu-target" type="number" min="0" max="1000000" step="any" value="0.08">
+        <p id="mu-target-result" role="status"></p>
+        <p class="muted">A larger μ gives less uncollided transmission at the same thickness and energy. A target of 0.08 cm⁻¹ by itself does not establish shielding adequacy.</p>
       </section>
       <section class="card">
         <h2>Transmission across photon energies</h2>
@@ -122,7 +139,7 @@
       </section>
       <section class="card">
         <h2>OpenGATE simulation</h2>
-        <p>Download the current recipe to run the optional OpenGATE/Geant4 slab simulation on your computer. The website itself does not run Geant4.</p>
+        <p>Download the current recipe and run the optional OpenGATE/Geant4 slab simulation on your computer to estimate μ from simulated primary interactions. The website itself does not run Geant4. The slab is homogeneous and does not model nanotube structure or flexibility.</p>
         <button id="export-json">Download simulation recipe</button>
         <a href="https://github.com/Evan63w/radiationTester#optional-opengate-simulation">Simulation instructions</a>
       </section>

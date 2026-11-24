@@ -17,7 +17,26 @@ must be measured and independently evaluated for the intended application.
 
 The browser version runs at <https://evan63w.github.io/radiationTester/>. It
 performs the screening calculations locally in your browser and does not run
-OpenGATE. The default optimizer lets you select candidate elements, set each
+OpenGATE. The default mode screens a carbon nanotube (CNT) and polyethylene
+matrix composite. Enter the CNT mass percentage, a measured or explicitly
+assumed **bulk composite density**, sheet thickness and photon energy. The
+remaining mass is polyethylene. Default values are illustrative, not a tested
+recipe. Polyethylene is an example, not a validated
+matrix choice; the CNTs are approximated as homogeneous elemental carbon using
+the NIST carbon table. Neither the nanotube architecture, bonding, dispersion,
+agglomeration nor the actual material flexibility is predicted. The custom mode
+can explore other elemental recipes, but does not provide specific polymer
+matrix material models besides polyethylene.
+
+The results show mass attenuation in cm²/g and **linear** attenuation μ in
+cm⁻¹, where μ = (μ/ρ) × density. The target comparison defaults to 0.08 cm⁻¹,
+not cm²/g; it does not search for or certify a material meeting that target.
+At 0.08 cm⁻¹, a 1 mm sheet has approximately 99.2% uncollided transmission
+and the half-value thickness is about 8.66 cm. A larger μ reduces transmission
+at fixed thickness and energy; neither μ nor a numerical target alone establishes
+actual shielding performance.
+
+The optimizer mode lets you select candidate elements, set each
 element's maximum mass percentage, specify a fixed polyethylene binder mass
 percentage, and enter an assumed bulk density. At the selected photon energy
 and thickness it minimizes uncollided transmission by assigning the remaining
@@ -85,6 +104,35 @@ source .gate-venv/bin/activate
 python -m pip install -r requirements-gate.txt
 python run_gate.py /path/to/recipe.json --primaries 100000 --output gate-output
 ```
+
+For an independent Geant4 interaction-count estimate of linear μ, use a **new
+or empty** output directory:
+
+```sh
+python run_gate.py /path/to/recipe.json --primaries 100000 --estimate-mu --output gate-mu-output
+```
+
+The optional estimator records all primary-photon steps in the slab, including
+zero-energy-deposition steps, and counts unique primary events with no
+non-transport interaction. For this fixed normal pencil beam and homogeneous
+slab, it estimates `mu = -ln(uncollided / primaries) / thickness_cm`. It writes
+the counts, μ and an approximate 95% Wilson binomial interval transformed to
+μ in `mu-estimate.json`; `null` for μ and the upper interval bound means zero
+uncollided photons were observed and no finite upper estimate is available.
+If all photons are uncollided, the point estimate is zero but the upper
+interval remains positive. The interval reflects Monte Carlo sampling only,
+not uncertainties in the Geant4 physics, material model or real-world
+measurements. Small collision counts at low μ or low transmission can make
+the estimate imprecise; increase the number of primaries and inspect the
+interval. The saved `slab-steps.root` can be large.
+
+Compare results across several slab thicknesses and with narrow-beam
+measurements; a single simulation is not a material characterization. Geant4
+uses elemental composition and a homogeneous density, not individual CNTs,
+their contacts, orientations, matrix interfaces or mechanical properties.
+Independently measure the actual sample's density and bend behavior under
+defined conditions. The simulation does not establish that the matrix is
+flexible or that the composite is safe.
 
 The first run may download Geant4 physics data. The script models a homogeneous,
 100 mm square slab in vacuum, a normally incident monoenergetic pencil beam,
