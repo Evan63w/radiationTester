@@ -27,8 +27,21 @@
     <aside class="card">
       <h2>Recipe</h2>
       <label for="recipe-mode">Composition mode</label>
-      <select id="recipe-mode"><option value="preset">Polyethylene + tungsten / bismuth</option><option value="custom">Custom elemental composition</option></select>
-      <div id="preset-fields">
+      <select id="recipe-mode"><option value="optimize">Optimize selected elements</option><option value="preset">Polyethylene + tungsten / bismuth</option><option value="custom">Custom elemental composition</option></select>
+      <div id="optimize-fields">
+        <p class="muted">Select candidate elements and optionally limit their maximum mass percentages. The optimizer minimizes uncollided transmission at the selected energy, thickness, and assumed bulk density.</p>
+        <p class="muted">Some elements are toxic, radioactive or unsuitable. Selection is not a recommendation. Unconstrained optimization can choose just one element, not a practical or flexible compound.</p>
+        <p class="muted">Each row: element and maximum percentage of total mass.</p>
+        <div id="candidates"></div>
+        <button id="add-candidate" class="secondary" type="button">Add candidate element</button>
+        <label for="binder-percent">Fixed polyethylene binder (% by mass)</label>
+        <input id="binder-percent" type="number" min="0" max="100" step="any" value="30">
+        <label for="optimizer-density">Assumed bulk density for every candidate (g/cm³)</label>
+        <input id="optimizer-density" type="number" min="0.001" max="30" step="any" placeholder="Required">
+        <p class="muted">This density is held constant even as composition changes; it is not predicted or guaranteed to be physically achievable. Element limits and binder content do not guarantee flexibility.</p>
+        <p id="optimized-summary" class="muted" aria-live="polite"></p>
+      </div>
+      <div id="preset-fields" hidden>
       <p class="muted">Polyethylene binder with elemental fillers. Percentages are by mass, not volume.</p>
       <label for="tungsten">Tungsten <output id="tungsten-value">40%</output></label>
       <input id="tungsten" type="range" min="0" max="100" value="40">
@@ -49,7 +62,7 @@
         <label for="custom-density">Custom bulk density (g/cm³; measured or assumed)</label>
         <input id="custom-density" type="number" min="0.001" max="30" step="any" placeholder="Required">
       </div>
-      <label class="check"><input id="use-density" type="checkbox"> Use measured density</label>
+      <label class="check" hidden><input id="use-density" type="checkbox"> Use measured density</label>
       <div id="density-field" hidden>
         <label for="density">Measured density (g/cm³)</label>
         <input id="density" type="number" min="0.001" max="30" step="any" value="2.7">
@@ -83,6 +96,11 @@
         <p class="muted">Saved recipes are compared at the current energy and last only until this page is closed or refreshed. Export the CSV to keep the results.</p>
         <label for="recipe-name">Recipe name</label>
         <input id="recipe-name" type="text" value="Recipe 1" maxlength="100">
+        <p class="muted">Optional measured bend test for this recipe: use the actual tested sample's composition, thickness and measured density. Enter both fields only for a real test, not a prediction. Smaller radii indicate tighter bending under the specified conditions.</p>
+        <label for="bend-radius">Measured minimum bend radius without damage (mm)</label>
+        <input id="bend-radius" type="number" min="0.001" step="any" placeholder="Optional">
+        <label for="bend-method">Test method and conditions</label>
+        <input id="bend-method" type="text" maxlength="200" placeholder="Optional; required with bend radius">
         <div class="actions">
           <button id="save">Save current recipe</button>
           <button id="clear" class="secondary">Clear saved recipes</button>
@@ -90,10 +108,17 @@
         </div>
         <div class="table-wrap">
           <table id="comparison" hidden>
-            <thead><tr><th>Recipe</th><th>Composition (mass %)</th><th>Density g/cm³</th><th>Thickness mm</th><th>Transmission %</th><th>Mass kg/m²</th><th>Lead equiv. mm</th></tr></thead>
+            <thead><tr><th>Recipe</th><th>Composition (mass %)</th><th>Density g/cm³</th><th>Thickness mm</th><th>Transmission %</th><th>Mass kg/m²</th><th>Lead equiv. mm</th><th>Measured bend radius mm</th><th>Bend test conditions</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
+      </section>
+      <section class="card">
+        <h2>Screen tested flexible recipes</h2>
+        <p class="muted">Among saved recipes with a measured bend radius at or below your limit, find the lowest modeled transmission at the selected energy. Compare only tests performed under comparable conditions, including temperature, bend cycles and damage criteria. This is a ranking of the saved samples, not an optimization over untested materials or a safety assessment.</p>
+        <label for="bend-limit">Maximum acceptable measured bend radius (mm)</label>
+        <input id="bend-limit" type="number" min="0.001" step="any" placeholder="Enter a limit">
+        <p id="bend-screen" role="status">Enter a bend-radius limit to screen saved recipes.</p>
       </section>
       <section class="card">
         <h2>OpenGATE simulation</h2>
@@ -103,7 +128,8 @@
       </section>
       <details class="card">
         <summary>Methods and data sources</summary>
-        <p>Mass fractions are combined by the mixture rule. Atom counts are converted using approximate atomic masses derived from NIST Z/A values; isotopes and bonds are not specified. Density in preset mode defaults to an ideal additive-volume estimate, assuming no porosity; replace it with a measured value. Custom mode requires a bulk density. Transmission is exp(-μ/ρ × density × thickness), for a uniform sheet at normal incidence. Lead equivalence is energy-specific.</p>
+        <p>Mass fractions are combined by the mixture rule. The optimizer holds density, thickness, energy and binder fraction fixed, then assigns mass to the allowed elements in descending order of their mass attenuation coefficients up to their specified limits. Atom counts are converted using approximate atomic masses derived from NIST Z/A values; isotopes and bonds are not specified. Density in preset mode defaults to an ideal additive-volume estimate, assuming no porosity; replace it with a measured value. Custom mode requires a bulk density. Transmission is exp(-μ/ρ × density × thickness), for a uniform sheet at normal incidence. Lead equivalence is energy-specific.</p>
+        <p>Atomic and particle arrangements cannot be inferred from element names alone. Modeling them requires a specified chemical structure or spatial geometry and a suitable simulation; this homogeneous model does not resolve them.</p>
         <p>Flexibility, toxicity, manufacturing feasibility and dose are not predicted. NIST tables: <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/tab3.html">element attenuation (Z=1–92)</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html">element constants</a>, and <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/polyethylene.html">polyethylene</a>.</p>
       </details>
     </div>

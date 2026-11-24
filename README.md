@@ -17,14 +17,41 @@ must be measured and independently evaluated for the intended application.
 
 The browser version runs at <https://evan63w.github.io/radiationTester/>. It
 performs the screening calculations locally in your browser and does not run
-OpenGATE. Choose the preset or custom mode to explore mixtures of the 92 NIST
+OpenGATE. The default optimizer lets you select candidate elements, set each
+element's maximum mass percentage, specify a fixed polyethylene binder mass
+percentage, and enter an assumed bulk density. At the selected photon energy
+and thickness it minimizes uncollided transmission by assigning the remaining
+mass to elements in descending order of their NIST mass attenuation
+coefficients, up to their limits. The limits must allow the remaining mass to
+total 100%. Elements need not appear in the result. With no restrictive limits
+the result is typically just the strongest element plus the specified binder.
+The density is held fixed across all compositions, not predicted from them;
+the resulting density and mixture may be physically unattainable. Changing the
+energy may change the optimum. The optimizer does not assess flexibility,
+toxicity, cost, stability, or manufacturability.
+
+For a flexibility constraint, save actual tested samples using their composition,
+measured density and thickness. Optionally enter each sample's measured minimum
+bend radius without damage and its test method and conditions. The tested
+recipe screen selects the lowest modeled photon transmission among saved
+samples whose measured radius is at or below a user-specified limit. Only
+compare consistent test conditions (including temperature, bend cycles and
+damage criteria). This ranks only the supplied samples and one mechanical
+measurement; it cannot predict flexibility of new mixtures, confirm long-term
+durability, or validate shielding. Comparing results at a different photon
+energy recalculates attenuation, not the mechanical test.
+
+Choose the preset or custom mode to explore mixtures of the 92 NIST
 elements and polyethylene, by mass percentage or by relative atom count
 (elements only). Atom counts are converted to mass fractions using approximate
 atomic masses derived from NIST's rounded Z/A values; isotopic composition and
 chemical bonding are not modeled. In custom mode provide a measured or
 explicitly assumed bulk density. Recipe comparisons are temporary unless
-exported. Chemical structure and particle size or arrangement may affect
-performance and must be investigated separately.
+exported. Chemical bonds, particle size, dispersion, layers, and other spatial
+arrangements cannot be determined from element choices alone. Evaluating them
+requires a specified structure or geometry and suitable physical models or
+simulations, followed by measurements; this homogeneous model does not resolve
+them.
 
 ## Run the Python dashboard locally
 

@@ -17,13 +17,23 @@ function number(id, min, max) {
 }
 
 function readRecipe() {
-  const custom = $("recipe-mode").value === "custom";
-  $("preset-fields").hidden = custom;
-  $("custom-fields").hidden = !custom;
-  $("use-density").parentElement.hidden = custom;
-  $("density-field").hidden = custom || !$("use-density").checked;
+  const mode = $("recipe-mode").value;
+  $("preset-fields").hidden = mode !== "preset";
+  $("custom-fields").hidden = mode !== "custom";
+  $("optimize-fields").hidden = mode !== "optimize";
+  $("use-density").parentElement.hidden = mode !== "preset";
+  $("density-field").hidden = mode !== "preset" || !$("use-density").checked;
+  const energy = number("energy", 1, 20000);
   let fractions, density;
-  if (custom) {
+  if (mode === "optimize") {
+    const candidates = [...$("candidates").children].map(row => {
+      const input = row.querySelector("input");
+      return {name: row.querySelector("select").value, maxPercent: input.value.trim() ? Number(input.value) : NaN};
+    });
+    fractions = model.optimizeFractions(candidates, number("binder-percent", 0, 100), tables, energy, elements);
+    $("optimized-summary").textContent = `Optimized mass composition: ${compositionText(fractions)}`;
+    density = number("optimizer-density", 0.001, 30);
+  } else if (mode === "custom") {
     const components = [...$("components").children].map(row => {
       const input = row.querySelector("input");
       return {name: row.querySelector("select").value, amount: input.value.trim() ? Number(input.value) : NaN};
@@ -48,7 +58,7 @@ function readRecipe() {
     mass_fractions: fractions,
     density_g_cm3: density,
     thickness_mm: number("thickness", 0.001, 1000),
-    energy_kev: number("energy", 1, 20000)
+    energy_kev: energy
   };
 }
 
@@ -57,12 +67,12 @@ const compositionText = fractions => Object.entries(fractions)
   .filter(([, value]) => value > 0)
   .map(([name, value]) => `${name} ${fmt(value * 100)}%`).join(", ");
 
-function addComponent(name = "C", amount = 1) {
+function addComponent(name = "C", amount = 1, candidate = false) {
   const row = document.createElement("div");
   row.className = "component-row";
   const select = document.createElement("select");
-  select.setAttribute("aria-label", "Component element");
-  const choices = [["polyethylene", "Polyethylene (binder)"], ...Object.entries(elements).map(([symbol, entry]) => [symbol, `${symbol} — ${entry.name} (Z=${entry.number})`])];
+  select.setAttribute("aria-label", candidate ? "Candidate element" : "Component element");
+  const choices = [...(candidate ? [] : [["polyethylene", "Polyethylene (binder)"]]), ...Object.entries(elements).map(([symbol, entry]) => [symbol, `${symbol} — ${entry.name} (Z=${entry.number})`])];
   for (const [value, label] of choices) {
     const option = document.createElement("option");
     option.value = value;
@@ -73,19 +83,20 @@ function addComponent(name = "C", amount = 1) {
   const input = document.createElement("input");
   input.type = "number";
   input.min = "0";
+  if (candidate) input.max = "100";
   input.step = "any";
   input.value = String(amount);
-  input.setAttribute("aria-label", "Component amount");
+  input.setAttribute("aria-label", candidate ? "Maximum mass percent" : "Component amount");
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "secondary";
   remove.textContent = "×";
-  remove.setAttribute("aria-label", "Remove component");
+  remove.setAttribute("aria-label", candidate ? "Remove candidate" : "Remove component");
   remove.addEventListener("click", () => { row.remove(); update(); });
   select.addEventListener("change", update);
   input.addEventListener("input", update);
   row.append(select, input, remove);
-  $("components").appendChild(row);
+  $(candidate ? "candidates" : "components").appendChild(row);
 }
 
 function renderChart(recipe, leadThickness) {
@@ -120,7 +131,8 @@ function comparisonRows(energy) {
     const result = model.calculate(tables, saved.recipe, energy);
     return [saved.name, compositionText(saved.recipe.mass_fractions),
       saved.recipe.density_g_cm3, saved.recipe.thickness_mm, result.transmission * 100,
-      result.mass, result.leadEquivalent];
+      result.mass, result.leadEquivalent, saved.bendTest ? saved.bendTest.radius : "",
+      saved.bendTest ? saved.bendTest.method : ""];
   });
 }
 
@@ -139,6 +151,20 @@ function renderComparisons(energy) {
   }
   $("comparison").hidden = !rows.length;
   $("export-csv").disabled = !rows.length;
+  const rawLimit = $("bend-limit").value.trim();
+  if (!rawLimit) {
+    $("bend-screen").textContent = "Enter a bend-radius limit to screen saved recipes.";
+  } else {
+    const limit = Number(rawLimit);
+    if (!Number.isFinite(limit) || limit < 0.001) {
+      $("bend-screen").textContent = "Maximum bend radius must be at least 0.001 mm.";
+    } else {
+      const best = model.bestTestedRecipe(savedRecipes, limit, tables, energy);
+      $("bend-screen").textContent = best
+        ? `Lowest modeled transmission among qualifying saved recipes: ${best.name} (${fmt(model.calculate(tables, best.recipe, energy).transmission * 100)}%; measured bend radius ${fmt(best.bendTest.radius)} mm). Compare test conditions before relying on this ranking.`
+        : "No saved recipe has a measured bend radius within this limit.";
+    }
+  }
 }
 
 function update() {
@@ -162,6 +188,7 @@ function update() {
   } catch (error) {
     currentRecipe = null;
     $("composition-summary").textContent = "";
+    $("optimized-summary").textContent = "";
     $("error").textContent = error.message;
     $("error").hidden = false;
     $("save").disabled = true;
@@ -172,6 +199,7 @@ function update() {
     $("lead-comparison").textContent = "";
     $("chart").replaceChildren();
     $("comparison").hidden = true;
+    $("bend-screen").textContent = "Screening unavailable until the current inputs are valid.";
   }
 }
 
@@ -206,7 +234,9 @@ async function init() {
   }
   addComponent("C", 50);
   addComponent("H", 50);
-  for (const id of ["tungsten", "bismuth", "use-density", "density", "custom-density", "thickness", "energy", "lead-thickness", "recipe-mode"]) {
+  addComponent("W", 100, true);
+  addComponent("Bi", 100, true);
+  for (const id of ["tungsten", "bismuth", "use-density", "density", "custom-density", "optimizer-density", "binder-percent", "thickness", "energy", "lead-thickness", "recipe-mode", "bend-limit"]) {
     $(id).addEventListener("input", update);
   }
   $("composition-basis").addEventListener("change", () => {
@@ -216,6 +246,17 @@ async function init() {
     update();
   });
   $("add-component").addEventListener("click", () => { addComponent(); update(); });
+  $("add-candidate").addEventListener("click", () => {
+    const selected = new Set([...$("candidates").querySelectorAll("select")].map(select => select.value));
+    const next = Object.keys(elements).find(symbol => !selected.has(symbol));
+    if (!next) {
+      $("error").textContent = "All available elements have already been added.";
+      $("error").hidden = false;
+      return;
+    }
+    addComponent(next, 100, true);
+    update();
+  });
   $("save").addEventListener("click", () => {
     const name = $("recipe-name").value.trim();
     if (!name) {
@@ -223,14 +264,24 @@ async function init() {
       $("error").hidden = false;
       return;
     }
-    savedRecipes.push({name, recipe: currentRecipe});
+    const radiusText = $("bend-radius").value.trim();
+    const method = $("bend-method").value.trim();
+    const radius = Number(radiusText);
+    if ((radiusText || method) && (!radiusText || !Number.isFinite(radius) || radius < 0.001 || !method)) {
+      $("error").textContent = "For a measured bend test, enter a radius of at least 0.001 mm and the test method and conditions.";
+      $("error").hidden = false;
+      return;
+    }
+    savedRecipes.push({name, recipe: currentRecipe, bendTest: radiusText ? {radius, method} : null});
     $("recipe-name").value = `Recipe ${savedRecipes.length + 1}`;
+    $("bend-radius").value = "";
+    $("bend-method").value = "";
     update();
   });
   $("clear").addEventListener("click", () => { savedRecipes = []; update(); });
   $("export-json").addEventListener("click", () => download("recipe.json", JSON.stringify(currentRecipe, null, 2), "application/json"));
   $("export-csv").addEventListener("click", () => {
-    const header = ["Energy keV", "Recipe", "Composition (mass %)", "Density g/cm³", "Thickness mm", "Transmission %", "Mass kg/m²", "Lead equivalent mm"];
+    const header = ["Energy keV", "Recipe", "Composition (mass %)", "Density g/cm³", "Thickness mm", "Transmission %", "Mass kg/m²", "Lead equivalent mm", "Measured bend radius mm", "Bend test conditions"];
     const rows = comparisonRows(currentRecipe.energy_kev).map(row => [currentRecipe.energy_kev, ...row]);
     download("shield-comparison.csv", [header, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n") + "\r\n", "text/csv");
   });

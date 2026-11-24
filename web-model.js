@@ -53,6 +53,38 @@
     return Object.fromEntries(Object.entries(weights).map(([name, weight]) => [name, weight / total]));
   }
 
+  function optimizeFractions(components, binderPercent, tables, energy, elements) {
+    if (!components.length) throw new Error("Add at least one candidate element.");
+    if (!Number.isFinite(binderPercent) || binderPercent < 0 || binderPercent > 100) {
+      throw new Error("Binder percentage must be between 0 and 100.");
+    }
+    const seen = new Set();
+    const candidates = components.map(({name, maxPercent}) => {
+      if (seen.has(name)) throw new Error(`Candidate ${name} is listed more than once.`);
+      seen.add(name);
+      if (!Object.hasOwn(elements, name) || !Object.hasOwn(tables, name)) throw new Error(`Unknown candidate element: ${name}`);
+      if (!Number.isFinite(maxPercent) || maxPercent < 0 || maxPercent > 100) {
+        throw new Error(`Maximum percentage for ${name} must be between 0 and 100.`);
+      }
+      return {name, maxPercent, coefficient: massAttenuation(tables[name], energy)};
+    });
+    const required = 100 - binderPercent;
+    const tolerance = Number.EPSILON * 100 * (candidates.length + 2);
+    if (candidates.reduce((sum, candidate) => sum + candidate.maxPercent, 0) < required - tolerance) {
+      throw new Error("Candidate maximum percentages cannot fill the remaining mass after the binder.");
+    }
+    candidates.sort((a, b) => b.coefficient - a.coefficient);
+    const fractions = {};
+    if (binderPercent > 0) fractions.polyethylene = binderPercent / 100;
+    let remaining = required;
+    for (const candidate of candidates) {
+      const amount = Math.min(candidate.maxPercent, Math.max(remaining, 0));
+      if (amount > 0) fractions[candidate.name] = amount / 100;
+      remaining -= amount;
+    }
+    return fractions;
+  }
+
   function calculate(tables, recipe, energy = recipe.energy_kev) {
     const f = recipe.mass_fractions;
     const mu = Object.entries(f).reduce((sum, [name, weight]) => sum + (weight ? weight * massAttenuation(tables[name], energy) : 0), 0);
@@ -65,6 +97,21 @@
     };
   }
 
+  function bestTestedRecipe(savedRecipes, maxRadius, tables, energy) {
+    if (!Number.isFinite(maxRadius) || maxRadius <= 0) throw new Error("Maximum bend radius must be greater than zero.");
+    let best = null, bestDepth = -Infinity;
+    for (const saved of savedRecipes) {
+      if (!saved.bendTest || saved.bendTest.radius > maxRadius) continue;
+      const result = calculate(tables, saved.recipe, energy);
+      const depth = result.coefficient * saved.recipe.density_g_cm3 * saved.recipe.thickness_mm / 10;
+      if (depth > bestDepth) {
+        best = saved;
+        bestDepth = depth;
+      }
+    }
+    return best;
+  }
+
   function plotEnergies(tables) {
     const values = [1, 20000];
     for (let i = 1; i < 300; i++) values.push(10 ** (i * Math.log10(20000) / 300));
@@ -75,7 +122,7 @@
     }
     return [...new Set(values)].sort((a, b) => a - b);
   }
-  const api = {densities, materials, parseTable, massAttenuation, idealDensity, customFractions, calculate, plotEnergies};
+  const api = {densities, materials, parseTable, massAttenuation, idealDensity, customFractions, optimizeFractions, calculate, bestTestedRecipe, plotEnergies};
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ShieldModel = api;
 })(globalThis);
