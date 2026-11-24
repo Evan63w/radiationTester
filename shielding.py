@@ -2,6 +2,7 @@
 
 import bisect
 import csv
+import json
 import math
 from functools import lru_cache
 from pathlib import Path
@@ -11,12 +12,21 @@ DENSITIES = {"polyethylene": 0.94, "tungsten": 19.3, "bismuth": 9.78, "lead": 11
 MATERIALS = ("polyethylene", "tungsten", "bismuth")
 
 
+@lru_cache(maxsize=1)
+def elements():
+    with (DATA / "elements.json").open() as file:
+        return json.load(file)
+
+
 @lru_cache(maxsize=None)
 def table(material):
-    if material not in DENSITIES:
+    if material in elements():
+        rows = [(energy * 1000, mu) for energy, mu in elements()[material]["rows"]]
+    elif material in DENSITIES:
+        with (DATA / f"{material}.csv").open(newline="") as file:
+            rows = [(float(energy) * 1000, float(mu)) for energy, mu in csv.reader(file)]
+    else:
         raise ValueError(f"Unknown material: {material}")
-    with (DATA / f"{material}.csv").open(newline="") as file:
-        rows = [(float(energy) * 1000, float(mu)) for energy, mu in csv.reader(file)]
     if not rows or any(e <= 0 or mu <= 0 for e, mu in rows):
         raise ValueError(f"Invalid attenuation table for {material}")
     if any(rows[i][0] > rows[i + 1][0] for i in range(len(rows) - 1)):
@@ -41,8 +51,8 @@ def mass_attenuation(material, energy_kev):
 
 def validate_recipe(recipe):
     fractions = recipe["mass_fractions"]
-    if set(fractions) != set(MATERIALS):
-        raise ValueError("Recipe must contain polyethylene, tungsten, and bismuth")
+    if not fractions or any(name not in elements() and name not in MATERIALS for name in fractions):
+        raise ValueError("Recipe must contain known elements or polyethylene")
     if any(not math.isfinite(v) or v < 0 or v > 1 for v in fractions.values()):
         raise ValueError("Mass fractions must be finite values between 0 and 1")
     if not math.isclose(sum(fractions.values()), 1, abs_tol=1e-9):

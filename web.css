@@ -1,5 +1,6 @@
 :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172f41; background: #f2f6f7; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; }
 .shell { max-width: 1280px; margin: auto; padding: 0 24px; }
 header { background: #103c4c; color: white; padding: 28px 0; }
@@ -17,7 +18,9 @@ p { line-height: 1.5; }
 .muted { color: #58707d; font-size: .89rem; }
 label { display: block; font-size: .9rem; font-weight: 650; margin: 18px 0 6px; }
 label output { float: right; color: #157688; }
-input[type=number], input[type=text] { width: 100%; padding: 9px; font: inherit; border: 1px solid #b7c8ce; border-radius: 5px; }
+input[type=number], input[type=text], select { width: 100%; padding: 9px; font: inherit; border: 1px solid #b7c8ce; border-radius: 5px; background: white; }
+.component-row { display: grid; grid-template-columns: minmax(0, 1fr) 75px 36px; gap: 5px; margin: 8px 0; align-items: center; }
+.component-row button { padding: 7px; }
 input[type=range] { width: 100%; accent-color: #12788a; }
 .check { display: flex; align-items: center; gap: 8px; }
 .check input { accent-color: #12788a; }

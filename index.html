@@ -19,12 +19,16 @@
 <main class="shell">
   <div class="warning"><strong>Research screening only — not a safety assessment.</strong>
     Estimates cover uncollided, monoenergetic X-ray/gamma photons only. They exclude scatter,
-    fluorescence, geometry, spectra, defects and mechanical performance. Never use these
+    fluorescence, geometry, spectra, defects and mechanical performance. Atomic bonding,
+    crystal structure, particle distribution and chemistry are not modeled. Never use these
     results alone to select protective equipment.</div>
   <p id="error" class="error" role="alert" hidden></p>
   <div class="layout">
     <aside class="card">
       <h2>Recipe</h2>
+      <label for="recipe-mode">Composition mode</label>
+      <select id="recipe-mode"><option value="preset">Polyethylene + tungsten / bismuth</option><option value="custom">Custom elemental composition</option></select>
+      <div id="preset-fields">
       <p class="muted">Polyethylene binder with elemental fillers. Percentages are by mass, not volume.</p>
       <label for="tungsten">Tungsten <output id="tungsten-value">40%</output></label>
       <input id="tungsten" type="range" min="0" max="100" value="40">
@@ -32,6 +36,19 @@
       <input id="bismuth" type="range" min="0" max="60" value="30">
       <p>Polyethylene: <strong id="polyethylene-value">30%</strong></p>
       <p class="muted">Ideal void-free density: <strong id="ideal-density"></strong> g/cm³</p>
+      </div>
+      <div id="custom-fields" hidden>
+        <p class="muted">Choose elements by atomic number or symbol. Some elements are toxic, radioactive or unsuitable for a flexible material; inclusion is not a recommendation.</p>
+        <label for="composition-basis">Input basis</label>
+        <select id="composition-basis"><option value="mass">Mass percentages (must total 100%)</option><option value="atoms">Relative atom counts</option></select>
+        <p class="muted" id="basis-help">Percentages by mass, not volume. Polyethylene is available as a binder.</p>
+        <div id="components"></div>
+        <button id="add-component" class="secondary" type="button">Add component</button>
+        <p id="composition-summary" class="muted"></p>
+        <p class="muted">Enter a measured or explicitly assumed bulk density below. Atom counts specify proportions, not atomic arrangement or bonds.</p>
+        <label for="custom-density">Custom bulk density (g/cm³; measured or assumed)</label>
+        <input id="custom-density" type="number" min="0.001" max="30" step="any" placeholder="Required">
+      </div>
       <label class="check"><input id="use-density" type="checkbox"> Use measured density</label>
       <div id="density-field" hidden>
         <label for="density">Measured density (g/cm³)</label>
@@ -73,7 +90,7 @@
         </div>
         <div class="table-wrap">
           <table id="comparison" hidden>
-            <thead><tr><th>Recipe</th><th>W %</th><th>Bi %</th><th>PE %</th><th>Density g/cm³</th><th>Thickness mm</th><th>Transmission %</th><th>Mass kg/m²</th><th>Lead equiv. mm</th></tr></thead>
+            <thead><tr><th>Recipe</th><th>Composition (mass %)</th><th>Density g/cm³</th><th>Thickness mm</th><th>Transmission %</th><th>Mass kg/m²</th><th>Lead equiv. mm</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -86,8 +103,8 @@
       </section>
       <details class="card">
         <summary>Methods and data sources</summary>
-        <p>Mass fractions are combined by the mixture rule. Density defaults to an ideal additive-volume estimate, assuming no porosity; replace it with a measured value. Transmission is exp(-μ/ρ × density × thickness), for a uniform sheet at normal incidence. Lead equivalence is energy-specific.</p>
-        <p>Flexibility, toxicity, manufacturing feasibility and dose are not predicted. NIST mass attenuation tables: <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/polyethylene.html">polyethylene</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z74.html">tungsten</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z83.html">bismuth</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z82.html">lead</a>.</p>
+        <p>Mass fractions are combined by the mixture rule. Atom counts are converted using approximate atomic masses derived from NIST Z/A values; isotopes and bonds are not specified. Density in preset mode defaults to an ideal additive-volume estimate, assuming no porosity; replace it with a measured value. Custom mode requires a bulk density. Transmission is exp(-μ/ρ × density × thickness), for a uniform sheet at normal incidence. Lead equivalence is energy-specific.</p>
+        <p>Flexibility, toxicity, manufacturing feasibility and dose are not predicted. NIST tables: <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/tab3.html">element attenuation (Z=1–92)</a>, <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html">element constants</a>, and <a href="https://physics.nist.gov/PhysRefData/XrayMassCoef/ComTab/polyethylene.html">polyethylene</a>.</p>
       </details>
     </div>
   </div>

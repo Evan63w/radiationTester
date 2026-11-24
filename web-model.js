@@ -37,9 +37,25 @@
     return 1 / materials.reduce((sum, name) => sum + fractions[name] / densities[name], 0);
   }
 
+  function customFractions(components, basis, elements) {
+    if (!components.length) throw new Error("Add at least one component.");
+    const weights = {};
+    for (const {name, amount} of components) {
+      if (Object.hasOwn(weights, name)) throw new Error(`Component ${name} is listed more than once.`);
+      if (!(name in elements) && name !== "polyethylene") throw new Error(`Unknown component: ${name}`);
+      if (basis === "atoms" && name === "polyethylene") throw new Error("Atom-count mode accepts elements only, not polyethylene.");
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error("Each component amount must be greater than zero.");
+      weights[name] = basis === "atoms" ? amount * elements[name].number / elements[name].z_over_a : amount;
+    }
+    const total = Object.values(weights).reduce((a, b) => a + b, 0);
+    if (!Number.isFinite(total) || total <= 0) throw new Error("Component total must be positive and finite.");
+    if (basis === "mass" && Math.abs(total - 100) > 1e-6) throw new Error(`Mass percentages must total 100% (currently ${total.toFixed(3)}%).`);
+    return Object.fromEntries(Object.entries(weights).map(([name, weight]) => [name, weight / total]));
+  }
+
   function calculate(tables, recipe, energy = recipe.energy_kev) {
     const f = recipe.mass_fractions;
-    const mu = materials.reduce((sum, name) => sum + (f[name] ? f[name] * massAttenuation(tables[name], energy) : 0), 0);
+    const mu = Object.entries(f).reduce((sum, [name, weight]) => sum + (weight ? weight * massAttenuation(tables[name], energy) : 0), 0);
     const depth = mu * recipe.density_g_cm3 * recipe.thickness_mm / 10;
     return {
       coefficient: mu,
@@ -59,7 +75,7 @@
     }
     return [...new Set(values)].sort((a, b) => a - b);
   }
-  const api = {densities, materials, parseTable, massAttenuation, idealDensity, calculate, plotEnergies};
+  const api = {densities, materials, parseTable, massAttenuation, idealDensity, customFractions, calculate, plotEnergies};
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.ShieldModel = api;
 })(globalThis);

@@ -7,6 +7,20 @@ from pathlib import Path
 from shielding import validate_recipe
 
 
+def elemental_composition(fractions):
+    composition = {}
+    for name, weight in fractions.items():
+        if weight == 0:
+            continue
+        if name == "polyethylene":
+            components = {"H": 0.143711, "C": 0.856289}
+        else:
+            components = {{"tungsten": "W", "bismuth": "Bi"}.get(name, name): 1}
+        for symbol, fraction in components.items():
+            composition[symbol] = composition.get(symbol, 0) + weight * fraction
+    return composition
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("recipe", type=Path, help="Recipe JSON exported by the dashboard")
@@ -22,15 +36,7 @@ def main():
     import opengate as gate
 
     mm, keV = gate.g4_units.mm, gate.g4_units.keV
-    fractions = recipe["mass_fractions"]
-    # NIST polyethylene composition by mass, not an arbitrary C:H ratio.
-    composition = {
-        "H": fractions["polyethylene"] * 0.143711,
-        "C": fractions["polyethylene"] * 0.856289,
-        "W": fractions["tungsten"],
-        "Bi": fractions["bismuth"],
-    }
-    composition = {element: weight for element, weight in composition.items() if weight > 0}
+    composition = elemental_composition(recipe["mass_fractions"])
     sim = gate.Simulation()
     sim.output_dir = args.output.resolve()
     sim.world.size = [300 * mm, 300 * mm, (recipe["thickness_mm"] + 300) * mm]

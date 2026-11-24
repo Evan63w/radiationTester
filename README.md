@@ -1,21 +1,30 @@
 # Flexible Shield Lab
 
-A research dashboard for screening polyethylene composites with elemental
-tungsten and bismuth fillers against X-ray or gamma photons. It is not designed
-for neutrons, beta particles, or radiation protection decisions.
+A research dashboard for screening candidate elemental mixtures and
+polyethylene composites against X-ray or gamma photons. It is not designed for
+neutrons, beta particles, or radiation protection decisions.
 
 **Not safety equipment or a safety assessment.** The calculations estimate only
 uncollided monoenergetic photon transmission through a uniform flat sheet at
 normal incidence. Scattered photons, fluorescence, radiation spectra, dose,
 seams, defects and actual use geometry are omitted. The app does not predict
-flexibility, toxicity, manufacturability or durability. Any proposed material
+atomic arrangements, bonds, crystal structure, particle dispersion,
+flexibility, toxicity, manufacturability or durability. Some listed elements
+are radioactive, toxic or otherwise unsuitable. Any proposed material
 must be measured and independently evaluated for the intended application.
 
 ## Open the dashboard
 
 The browser version runs at <https://evan63w.github.io/radiationTester/>. It
 performs the screening calculations locally in your browser and does not run
-OpenGATE. Recipe comparisons are temporary unless exported.
+OpenGATE. Choose the preset or custom mode to explore mixtures of the 92 NIST
+elements and polyethylene, by mass percentage or by relative atom count
+(elements only). Atom counts are converted to mass fractions using approximate
+atomic masses derived from NIST's rounded Z/A values; isotopic composition and
+chemical bonding are not modeled. In custom mode provide a measured or
+explicitly assumed bulk density. Recipe comparisons are temporary unless
+exported. Chemical structure and particle size or arrangement may affect
+performance and must be investigated separately.
 
 ## Run the Python dashboard locally
 
@@ -68,6 +77,12 @@ The bundled CSV tables are the energy (MeV) and mass attenuation coefficient
 [tungsten](https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z74.html),
 [bismuth](https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z83.html),
 and [lead](https://physics.nist.gov/PhysRefData/XrayMassCoef/ElemTab/z82.html).
+The elemental dataset contains the same columns from
+[NIST's element tables](https://physics.nist.gov/PhysRefData/XrayMassCoef/tab3.html)
+for Z=1 through 92, plus the Z/A values in
+[NIST Table 1](https://physics.nist.gov/PhysRefData/XrayMassCoef/tab1.html).
+The tables approximate atomic absorption edges but do not include chemical
+absorption-edge fine structure.
 The app uses log-log interpolation, treating absorption-edge discontinuities
 separately and using the upper value exactly at an edge.
 
