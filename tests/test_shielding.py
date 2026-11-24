@@ -2,6 +2,7 @@ import math
 import unittest
 
 from shielding import ideal_density, mass_attenuation, plot_energies, results, table, transmission, validate_recipe
+from run_gate import elemental_composition
 
 
 class ShieldingTests(unittest.TestCase):
@@ -51,6 +52,22 @@ class ShieldingTests(unittest.TestCase):
                 validate_recipe(recipe)
         recipe["density_g_cm3"] = 1
         recipe["mass_fractions"]["tungsten"] = 0.1
+        with self.assertRaises(ValueError):
+            validate_recipe(recipe)
+
+    def test_custom_elements_and_simulation_composition(self):
+        recipe = {
+            "mass_fractions": {"polyethylene": 0.4, "H": 0.1, "Fe": 0.5},
+            "density_g_cm3": 3.0, "thickness_mm": 1.0, "energy_kev": 100.0,
+        }
+        validate_recipe(recipe)
+        expected = 0.4 * mass_attenuation("polyethylene", 100) + 0.1 * mass_attenuation("H", 100) + 0.5 * mass_attenuation("Fe", 100)
+        self.assertAlmostEqual(results(recipe)["mass_attenuation_cm2_g"], expected)
+        composition = elemental_composition(recipe["mass_fractions"])
+        self.assertAlmostEqual(composition["H"], 0.4 * 0.143711 + 0.1)
+        self.assertAlmostEqual(composition["C"], 0.4 * 0.856289)
+        self.assertAlmostEqual(composition["Fe"], 0.5)
+        recipe["mass_fractions"] = {"unobtainium": 1}
         with self.assertRaises(ValueError):
             validate_recipe(recipe)
 
