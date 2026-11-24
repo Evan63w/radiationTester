@@ -1,0 +1,5 @@
+.venv/
+.gate-venv/
+__pycache__/
+*.pyc
+gate-output/
