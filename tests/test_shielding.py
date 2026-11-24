@@ -2,7 +2,7 @@ import math
 import unittest
 
 from shielding import ideal_density, mass_attenuation, plot_energies, results, table, transmission, validate_recipe
-from run_gate import elemental_composition
+from run_gate import attenuation_estimate, elemental_composition, uncollided_count
 
 
 class ShieldingTests(unittest.TestCase):
@@ -70,6 +70,36 @@ class ShieldingTests(unittest.TestCase):
         recipe["mass_fractions"] = {"unobtainium": 1}
         with self.assertRaises(ValueError):
             validate_recipe(recipe)
+
+    def test_mu_from_uncollided_counts_and_limits(self):
+        counts = attenuation_estimate(100000, 90000, 10)
+        self.assertAlmostEqual(counts["mu_cm_inv"], -math.log(0.9))
+        low, high = counts["mu_95_percent_wilson_cm_inv"]
+        self.assertLess(low, counts["mu_cm_inv"])
+        self.assertGreater(high, counts["mu_cm_inv"])
+        none_survive = attenuation_estimate(100, 0, 10)
+        self.assertIsNone(none_survive["mu_cm_inv"])
+        self.assertGreater(none_survive["mu_95_percent_wilson_cm_inv"][0], 0)
+        self.assertIsNone(none_survive["mu_95_percent_wilson_cm_inv"][1])
+        all_survive = attenuation_estimate(100, 100, 10)
+        self.assertEqual(all_survive["mu_cm_inv"], 0)
+        self.assertGreater(all_survive["mu_95_percent_wilson_cm_inv"][1], 0)
+        for args in ((0, 0, 1), (10, 11, 1), (10, 1, 0), (10, 1, float("nan"))):
+            with self.assertRaises(ValueError):
+                attenuation_estimate(*args)
+
+    def test_primary_interactions_are_counted_once(self):
+        steps = [{
+            "EventID": [0, 1, 1, 2, 2, 2],
+            "TrackID": [1, 1, 1, 1, 1, 2],
+            "ParentID": [0, 0, 0, 0, 0, 1],
+            "PDGCode": [22, 22, 22, 22, 22, 11],
+            "ProcessDefinedStep": ["Transportation", "Rayl", "Transportation",
+                                   "Transportation", "Transportation", "compt"],
+        }]
+        self.assertEqual(uncollided_count(steps, 3), 2)
+        with self.assertRaises(ValueError):
+            uncollided_count(steps, 4)
 
 
 if __name__ == "__main__":
